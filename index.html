@@ -101,6 +101,7 @@ tr.ed{display:block;background-image:linear-gradient(rgba(59,130,246,.2),rgba(59
 #dmp .dmh{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}#dmp .dmn{flex:none;min-width:26px;height:26px;border-radius:50%;background:var(--acc);color:var(--accink);font-weight:700;font-size:13px;display:grid;place-items:center}#dmp .dmnm{font-size:17px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
 #dmp .dmk{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:10px}#dmp .dmk small{display:block;font-size:12px;color:var(--mut);margin-bottom:2px}#dmp .dmk strong{font-size:16px}
 #dmp .dmx{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:14px;color:var(--mut);margin-bottom:10px}#dmp .dmb{display:grid;gap:8px}#dmp .dmb button{width:100%;min-height:44px;font-size:15px}#panel:not([hidden]){z-index:42}
+.edmod{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}.edbox{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(420px,100%);max-height:100%;overflow:auto;display:grid;gap:12px;box-shadow:0 18px 50px rgba(0,0,0,.45)}.edbox h3{margin:0;font-size:18px}.edbox .edf{display:grid;gap:12px;margin:0}.edbox .edf label{display:grid;gap:6px;font-size:13px;color:var(--mut)}.edbox .edf input{font-size:20px;padding:12px;text-align:center;width:100%;box-sizing:border-box}.edbox button{min-height:44px;font-size:15px}.edbox .st{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 </style>
 <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
@@ -253,11 +254,13 @@ function editor(r){
   const full=r.sisa!==null&&r.sisa<=0,mx=r.qty===null?'':Math.max(0,rnd(r.qty-r.cur));
   const rvb=(vst(r).length>1||(full&&r.jml!==null))?`<button data-rv="${r.id}">Hapus semua input</button>`:'';
   const sl=vst(r).map((s,i)=>`<div class="st"><span>Tahap ${i+1}:</span>${s.by?`<span class="by">${esc(s.by)}</span>`:''}<b>${esc(fmtD(s.tgl))||'-'}</b><b>${esc(s.jml)} ${esc(r.sat)}</b><button class="sm" data-dt="${r.id}:${i}">Hapus</button></div>`).join('');
-  return `<tr class="ed"><td colspan="12">${sl}${full?'<div class="note">Pesanan sudah lengkap, tidak ada sisa.</div><button data-cx="1">Tutup</button>'+rvb:''}<div class="edf"${full?' hidden':''}><span class="note">Diinput oleh <b>${esc(me)}</b></span><label>Tanggal datang tahap ${vst(r).length+1}<input type="date" id="e-t" value="${todayIso()}"></label><label>Jumlah datang (${esc(r.sat)})<input type="number" id="e-j" min="0" max="${mx}" step="any" value="${esc(r.sisa>0?r.sisa:'')}" inputmode="decimal"></label><button class="primary" data-sv="${r.id}">Simpan</button><button data-cx="1">Batal</button>${full?'':rvb}</div><div class="note" id="e-m" style="color:var(--warn)"></div></td></tr>`;
+  return `<div class="edmod" id="edmod" role="dialog" aria-modal="true"><div class="edbox"><h3>Input kedatangan</h3><div class="note"><b>${esc(r.spec)}</b></div>${sl}${full?'<div class="note">Pesanan sudah lengkap, tidak ada sisa.</div><button data-cx="1">Tutup</button>'+rvb:''}<div class="edf"${full?' hidden':''}><span class="note">Diinput oleh <b>${esc(me)}</b></span><label>Tanggal datang tahap ${vst(r).length+1}<input type="date" id="e-t" value="${todayIso()}"></label><label>Jumlah datang (${esc(r.sat)})<input type="number" id="e-j" min="0" max="${mx}" step="any" value="${esc(r.sisa>0?r.sisa:'')}" inputmode="decimal"></label><button class="primary" data-sv="${r.id}">Simpan</button><button data-cx="1">Batal</button>${full?'':rvb}</div><div class="note" id="e-m" style="color:var(--warn)"></div></div></div>`;
 }
 function renderTable(){
   const s=page*PS,sl=view.slice(s,s+PS);
-  $('#tb').innerHTML=sl.map(r=>`<tr class="row-${r.st}"><td class="ac">${act(r)}</td><td data-label="Tgl">${fmtD(r.tgl)}</td><td data-label="SIP">${esc(r.sip)}</td><td class="spec">${esc(r.spec)}</td><td class="r" data-label="Qty">${esc(r.qtyS)} ${esc(r.sat)}</td><td data-label="No. SPK">${esc(r.spk)}</td><td data-label="Keterangan">${esc(r.ket)}</td><td data-label="Pemesan">${esc(r.pem)}</td><td data-label="Tgl datang">${stgHtml(r)}</td><td class="r" data-label="Jumlah datang">${r.jml===null?'':esc(r.jml)}</td><td class="r" data-label="Sisa">${r.sisa===null?'':r.sisa}</td><td><span class="b ${r.st}">${LBL[r.st]}</span></td></tr>`+(editing===r.id?editor(r):'')).join('')||'<tr><td colspan="12">Tidak ada barang yang cocok dengan filter.</td></tr>';
+  $('#tb').innerHTML=sl.map(r=>`<tr class="row-${r.st}"><td class="ac">${act(r)}</td><td data-label="Tgl">${fmtD(r.tgl)}</td><td data-label="SIP">${esc(r.sip)}</td><td class="spec">${esc(r.spec)}</td><td class="r" data-label="Qty">${esc(r.qtyS)} ${esc(r.sat)}</td><td data-label="No. SPK">${esc(r.spk)}</td><td data-label="Keterangan">${esc(r.ket)}</td><td data-label="Pemesan">${esc(r.pem)}</td><td data-label="Tgl datang">${stgHtml(r)}</td><td class="r" data-label="Jumlah datang">${r.jml===null?'':esc(r.jml)}</td><td class="r" data-label="Sisa">${r.sisa===null?'':r.sisa}</td><td><span class="b ${r.st}">${LBL[r.st]}</span></td></tr>`).join('')||'<tr><td colspan="12">Tidak ada barang yang cocok dengan filter.</td></tr>';
+  {let m=$('#edmw');if(!m){m=document.createElement('div');m.id='edmw';m.addEventListener('click',tbClick);document.body.appendChild(m)}
+  const er=editing!==null?R.get(editing):null;m.innerHTML=er?editor(er):''}
   const pages=Math.max(1,Math.ceil(view.length/PS));
   $('#pi').textContent=view.length?`${s+1}-${s+sl.length} dari ${view.length}`:'0 baris';
   $('#pv').disabled=page===0;$('#nx').disabled=page>=pages-1;
@@ -318,7 +321,8 @@ async function remove(id){
   try{await writeRow(r,[],r.stg?r.base:0)}catch(e){return em(errMsg(e))}
   sel.delete(id);dmDrop(id);editing=null;apply(true);renderPanel();
 }
-$('#tb').addEventListener('click',e=>{
+function tbClick(e){
+  if(e.target.id==='edmod'){editing=null;renderTable();return}
   const t=e.target.closest('button');if(!t)return;const d=t.dataset;
   if(d.ed!==undefined){editing=+d.ed;renderTable()}
   else if(d.cx){editing=null;renderTable()}
@@ -326,8 +330,8 @@ $('#tb').addEventListener('click',e=>{
   else if(d.sv!==undefined)save(+d.sv);
   else if(d.rv!==undefined)remove(+d.rv);
   else if(d.dt!==undefined)delStage(d.dt);
-  
-});
+}
+$('#tb').addEventListener('click',tbClick);
 
 const line=(r,i)=>`${i+1}. ${r.spec.toUpperCase()} JUMLAH ${r.stg?r.stg[r.stg.length-1].jml:r.jml} ${r.sat} SUDAH DITERIMA GUDANG TGL ${isoRe.test(r.dtg||'')?ddmm(r.dtg):(r.dtg||'')} (SPK ${r.spk})`;
 function renderPanel(){
