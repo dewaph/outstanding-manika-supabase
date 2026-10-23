@@ -568,6 +568,23 @@ $('#dmp').addEventListener('click',e=>{
 $('#dmp').addEventListener('change',e=>{if(e.target.id==='dmsel'){dmPem=e.target.value;dmAsk=null;renderDm()}});
 $('#dmp').addEventListener('input',e=>{if(e.target.id==='dmq'){dmQ=e.target.value;dmAsk=null;renderDm();const q=$('#dmq');if(q){q.focus();const n=q.value.length;try{q.setSelectionRange(n,n)}catch(x){}}}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dmOpen&&pk.hidden){if(dmAsk!==null)dmAsk=null;else dmOpen=false;renderDm()}});
+
+/* Tombol back HP: menutup lapisan teratas (popup/panel), tidak langsung keluar halaman */
+let hd=0,hSkip=false;
+const ovN=()=>(dmOpen?1:0)+(dmAsk!==null?1:0)+(panelOpen?1:0)+(editing!==null?1:0);
+function syncHist(){const n=ovN();while(hd<n){history.pushState({ov:++hd},'')}if(hd>n){const d=hd-n;hd=n;hSkip=true;history.go(-d)}}
+{const a=renderTable;renderTable=function(){a.apply(this,arguments);syncHist()};
+const b=renderDm;renderDm=function(){b.apply(this,arguments);syncHist()};
+const c=renderPanel;renderPanel=function(){c.apply(this,arguments);syncHist()}}
+window.addEventListener('popstate',()=>{
+  if(hSkip){hSkip=false;return}
+  hd=Math.max(0,hd-1);
+  if(editing!==null){editing=null;renderTable()}
+  else if(panelOpen){panelOpen=false;renderPanel()}
+  else if(dmAsk!==null){dmAsk=null;renderDm()}
+  else if(dmOpen){dmOpen=false;renderDm()}
+  syncHist();
+});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='dmtg'||e.target.id==='dmjl')){const b=document.querySelector('#dmmod [data-ok]');if(b)b.click()}});
 
 </script>
