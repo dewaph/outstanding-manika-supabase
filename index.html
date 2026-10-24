@@ -93,7 +93,7 @@ tr.ed{display:block;background-image:linear-gradient(rgba(59,130,246,.2),rgba(59
 @media(prefers-reduced-motion:reduce){.ld-grid,.ld-grid i,.ld-bar::after{animation:none}.ld-bar::after{left:0;width:100%;opacity:.5}}
 #dm{display:inline-flex;align-items:center;gap:6px;background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}#dm[aria-pressed=true]{filter:brightness(.85)}#dm .cnt{background:#fff;color:#2563eb}
 #dmp:not([hidden]){position:fixed;inset:0;z-index:41;margin:0;border:0;border-radius:0;background:var(--bg);overflow:auto;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px))}#dmp>*{max-width:760px;margin-left:auto;margin-right:auto}#dmp .ph{position:sticky;top:0;z-index:2;background:var(--bg);align-items:center;margin-bottom:6px;padding:calc(12px + env(safe-area-inset-top,0px)) 0 12px;border-bottom:1px solid var(--line);font-size:17px}
-#dmp .dmf{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}#dmp #dmq{flex:1 1 100%;font-size:16px;padding:10px}#dmp .dmmod{position:fixed;inset:0;z-index:60;max-width:none;margin:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}#dmp .dmbox{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(380px,100%);display:grid;gap:12px;box-shadow:0 18px 50px rgba(0,0,0,.45)}#dmp .dmbox h3{margin:0;font-size:18px}#dmp .dmbox label{display:grid;gap:6px;font-size:13px;color:var(--mut)}#dmp .dmbox input{font-size:20px;padding:12px;text-align:center;letter-spacing:.04em}#dmp .dmbox .note{min-height:0}#dmp .dmbb button{min-height:46px;font-size:15px}#dmp .dmtp{background:var(--hl);color:var(--ink);border-color:var(--acc)}#dmp .dmbb{display:flex;gap:8px}#dmp .dmbb button{flex:1}#dmp #dmsel{flex:1;font-size:16px;padding:10px}
+#dmp .dmf{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}#dmp #dmq{flex:1 1 100%;font-size:16px;padding:10px}#dmp .dmmod{position:fixed;inset:0;z-index:60;max-width:none;margin:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}#dmp .dmbox{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(380px,100%);display:grid;gap:12px;box-shadow:0 18px 50px rgba(0,0,0,.45)}#dmp .dmbox h3{margin:0;font-size:18px}#dmp .dmbox label{display:grid;gap:6px;font-size:13px;color:var(--mut)}#dmp .dmbox input{font-size:20px;padding:12px;text-align:center;letter-spacing:.04em}#dmp .dmbox .note{min-height:0}#dmp .dmbb button{min-height:46px;font-size:15px}#dmp .dmtp{background:var(--hl);color:var(--ink);border-color:var(--acc)}#dmp .dmbb{display:flex;gap:8px}#dmp .dmbb button{flex:1}#dmp #dmsel,#dmp #dmwa{flex:1;font-size:16px;padding:10px}
 #dmp .dmtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px auto 14px;padding:4px;background:var(--hl);border-radius:12px}#dmp .dmtabs button{border:0;background:none;padding:10px 6px;font-weight:600;font-size:15px;border-radius:9px;color:var(--mut)}#dmp .dmtabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.2)}
 #dmp>.note{font-size:15px;text-align:center;padding:28px 8px}
 #dmp .grp{border-top:0;padding:0;margin-bottom:18px}#dmp .gh{padding:6px 2px 8px}#dmp .gh h3{font-size:18px}
@@ -465,8 +465,8 @@ function hideLdr(){clearInterval(ldT);const l=$('#ldr');if(!l)return;l.classList
 
 
 /* Daftar material/barang di gudang: setiap tahap datang ditampilkan terpisah */
-let dmOpen=false,dmPem='',dmQ='',dmAsk=null,dmTab='in';
-function dmOk(r){return (!dmPem||r.pem===dmPem)&&dmQ.toLowerCase().split(/\s+/).filter(Boolean).every(t=>r.hay.includes(t))}
+let dmOpen=false,dmBelum='',dmPem='',dmQ='',dmAsk=null,dmTab='in';
+function dmOk(r){return (!dmPem||r.pem===dmPem)&&(!dmBelum||dmTab==='out'||(dmBelum==='belum')!==isSent(r))&&dmQ.toLowerCase().split(/\s+/).filter(Boolean).every(t=>r.hay.includes(t))}
 let dmNew=new Map(),dmOut=new Map();
 function updDc(){const c=$('#dc');if(!c)return;const n=dmEntries('in',true).length;c.textContent=n;c.hidden=!n}
 const dmKey=(id,s)=>id+'|'+(s.tgl||'')+'|'+s.jml;
@@ -542,8 +542,9 @@ function renderDm(){
   let h=`<div class="ph"><b>${dmTab==='out'?'Barang dikeluarkan':'Daftar material/barang di gudang'}</b><span>${list.length} barang</span><button class="sm" id="dmcl" style="margin-left:auto">Tutup</button></div>`;
   h+=`<div class="dmf"><input id="dmq" type="search" placeholder="Cari barang, no. SPK, atau pengawas" value="${esc(dmQ)}" aria-label="Cari"></div>`;
   h+=`<div class="dmf"><select id="dmsel" aria-label="Pemesan"><option value="">Semua pemesan</option>${names.map(n=>`<option${n===dmPem?' selected':''}>${esc(n)}</option>`).join('')}</select></div>`;
+  if(dmTab==='in'){const w=dmEntries('in',true).filter(e=>e.r.jml!==null),nb=w.filter(e=>!isSent(e.r)).length,ns=w.length-nb;h+=`<div class="dmf"><select id="dmwa" aria-label="Status WA"><option value="">Semua status WA</option><option value="belum"${dmBelum==='belum'?' selected':''}>WA belum dikirim (${nb})</option><option value="sudah"${dmBelum==='sudah'?' selected':''}>WA sudah dikirim (${ns})</option></select></div>`}
   h+=`<div class="dmtabs"><button class="${dmTab==='in'?'on':''}" data-tab="in">Daftar material/barang di gudang (${dmCnt('in')})</button><button class="${dmTab==='out'?'on':''}" data-tab="out">Barang dikeluarkan (${dmCnt('out')})</button></div>`;
-  if(!list.length)h+=(dmQ||dmPem)&&dmEntries(dmTab,true).length?'<div class="note">Tidak ada barang yang cocok dengan pencarian.</div>':dmTab==='out'?'<div class="note">Belum ada barang yang dikeluarkan.</div>':'<div class="note">Daftar masih kosong. Barang yang baru Anda input akan muncul di sini.</div>';
+  if(!list.length)h+=(dmQ||dmPem||(dmBelum&&dmTab==='in'))&&dmEntries(dmTab,true).length?'<div class="note">Tidak ada barang yang cocok dengan pencarian.</div>':dmTab==='out'?'<div class="note">Belum ada barang yang dikeluarkan.</div>':'<div class="note">Daftar masih kosong. Barang yang baru Anda input akan muncul di sini.</div>';
   Object.entries(g).forEach(([pem,a])=>{
     h+=`<div class="grp"><div class="gh"><h3>Pemesan: ${esc(pem)}</h3><span class="note">${a.length} barang</span></div>`+
     a.map(dmCard).join('')+'</div>';
@@ -568,7 +569,7 @@ $('#dmp').addEventListener('click',e=>{
   else if(t.dataset.back!==undefined)dmBalik(t.dataset.back);
   else if(t.dataset.wa!==undefined)addSel(+t.dataset.wa)
 });
-$('#dmp').addEventListener('change',e=>{if(e.target.id==='dmsel'){dmPem=e.target.value;dmAsk=null;renderDm()}});
+$('#dmp').addEventListener('change',e=>{if(e.target.id==='dmsel'){dmPem=e.target.value;dmAsk=null;renderDm()}else if(e.target.id==='dmwa'){dmBelum=e.target.value;dmAsk=null;renderDm()}});
 $('#dmp').addEventListener('input',e=>{if(e.target.id==='dmq'){dmQ=e.target.value;dmAsk=null;renderDm();const q=$('#dmq');if(q){q.focus();const n=q.value.length;try{q.setSelectionRange(n,n)}catch(x){}}}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dmOpen&&pk.hidden){if(dmAsk!==null)dmAsk=null;else dmOpen=false;renderDm()}});
 
