@@ -1135,6 +1135,65 @@ header > #th { flex: none; }
 /* Card pencarian ikut menempel di atas saat halaman di-scroll */
 .toolbar { position: sticky; top: 8px; z-index: 30; }
 @media (max-width: 860px) { .toolbar { top: 6px; } }
+
+/* Popup notifikasi barang masuk panel WA */
+#wtoast {
+  position: fixed;
+  left: 50%;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  transform: translate(-50%, -24px) scale(.97);
+  z-index: 9999;
+  width: min(420px, calc(100% - 28px));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--wa);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity .22s ease, transform .28s cubic-bezier(.16,1,.3,1);
+}
+#wtoast.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+#wtoast.dup { border-left-color: var(--warn); }
+#wtoast .wt-ic {
+  flex: none; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--wa); color: #fff;
+}
+#wtoast.dup .wt-ic { background: var(--warn); }
+#wtoast .wt-ic svg { width: 24px; height: 24px; }
+#wtoast .wt-tx { min-width: 0; flex: 1; }
+#wtoast .wt-t { font-size: 15.5px; font-weight: 800; line-height: 1.25; }
+#wtoast .wt-n {
+  margin-top: 3px; font-size: 13.5px; font-weight: 600; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; overflow-wrap: anywhere;
+}
+#wtoast .wt-d { margin-top: 3px; font-size: 12.5px; color: var(--mut); line-height: 1.35; }
+#wtoast .wt-b {
+  flex: none; border: 0; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700;
+  padding: 10px 14px; border-radius: 12px; min-height: 40px;
+  background: var(--wa); color: #fff;
+}
+#wtoast.dup .wt-b { background: var(--warn); }
+#wtoast .wt-bar {
+  position: absolute; left: 0; bottom: 0; height: 4px; width: 100%;
+  background: var(--wa); opacity: .55; transform-origin: left;
+}
+#wtoast.dup .wt-bar { background: var(--warn); }
+#wtoast.show .wt-bar { animation: wtbar var(--wt-dur, 3.6s) linear forwards; }
+@keyframes wtbar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  #wtoast { transition: opacity .15s ease; }
+  #wtoast.show .wt-bar { animation: none; }
+}
 </style>
 <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
@@ -1429,9 +1488,34 @@ async function writeRow(r,stages){
   if(add.length)await sb('kedatangan',{m:'POST',b:add.map(x=>({item_id:r.id,tgl:x.tgl||null,jumlah:x.jml,oleh:x.by||me||null}))});
   await refreshRow(r.id);lastRev=await getRev();
 }
+let wtT=0;
+const WT_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+WT_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 11v6M12 7h.01"/></svg>';
+function wToast(o){
+  let t=document.getElementById('wtoast');
+  if(!t){t=document.createElement('div');t.id='wtoast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');
+    t.addEventListener('click',()=>{
+      clearTimeout(wtT);t.classList.remove('show');
+      if(panelOpen)return;
+      const open=()=>{panelOpen=true;renderPanel()};
+      if(dmOpen){dmAsk=null;dmOpen=false;renderDm();setTimeout(open,320)}
+      else open()
+    });
+    document.body.appendChild(t)}
+  const dur=o.btn?4.6:3.6;
+  t.className=o.dup?'dup':'';
+  t.style.setProperty('--wt-dur',dur+'s');
+  t.innerHTML=`<div class="wt-ic">${o.dup?WT_INFO:WT_OK}</div><div class="wt-tx"><div class="wt-t">${esc(o.title)}</div><div class="wt-n">${esc(o.name)}</div><div class="wt-d">${esc(o.desc)}</div></div>${o.btn?'<button class="wt-b" type="button">Buka</button>':''}<div class="wt-bar"></div>`;
+  void t.offsetWidth;t.classList.add('show');
+  clearTimeout(wtT);wtT=setTimeout(()=>t.classList.remove('show'),dur*1000);
+}
 function addSel(id,quiet){
   const r=R.get(id);if(!r||r.jml===null)return;
-  sel.set(id,true);if(!quiet)panelOpen=true;renderPanel();
+  const dup=sel.has(id),wasOpen=panelOpen;
+  sel.set(id,true);renderPanel();
+  const n=sel.size;
+  wToast(dup?{dup:1,title:'Barang ini sudah ada di daftar',name:r.spec,desc:'Tidak perlu ditambah lagi. Total '+n+' barang. Ketuk untuk membuka.',btn:!panelOpen}
+    :{title:'Berhasil ditambahkan',name:r.spec,desc:'Masuk ke daftar pesan WhatsApp. Total '+n+' barang. Ketuk untuk membuka.',btn:!panelOpen});
 }
 const em=t=>{const m=$('#e-m');if(m)m.textContent=t};
 const num2=v=>(v===''||isNaN(Number(v)))?null:Number(v);
@@ -1485,7 +1569,9 @@ function renderPanel(){
     `<pre class="prev"></pre><div class="act"><a class="btn wa" target="_blank" rel="noopener">Kirim lewat WhatsApp</a><button class="cp">Salin pesan</button></div>`;
     sh.appendChild(b);upd(b);
   });
+  const oldSh=p.querySelector('.drawer-shell'),oldTop=oldSh?oldSh.scrollTop:0;
   p.innerHTML='';p.appendChild(sh);
+  if(oldSh){sh.style.animation='none';sh.scrollTop=oldTop}
 }
 function upd(b){
   const msg=[...b.querySelectorAll('.it')].map((e,i)=>line(R.get(+e.dataset.id),i)).join('\n');
@@ -1510,7 +1596,11 @@ P.addEventListener('click',e=>{
     try{navigator.clipboard.writeText(txt).then(done,()=>{})}catch(x){}
   }
   else if(t.classList.contains('wa')&&t.classList.contains('off')){e.preventDefault();t.closest('.grp').querySelector('.hp').focus()}
-  else if(t.closest('a.wa')){const a=t.closest('a.wa');if(/^https:\/\/wa\.me\//.test(a.href))markSent(a.closest('.grp'))}
+  else if(t.closest('a.wa')){const a=t.closest('a.wa');if(/^https:\/\/wa\.me\//.test(a.href)){
+    e.preventDefault();
+    const w=window.open(a.href,'_blank','noopener');
+    if(!w)location.href=a.href;
+    markSent(a.closest('.grp'))}}
 });
 
 const USERS=['Dewa','Afga','Daryanto','Wartono'],COL=['#ef4444','#3b82f6','#f59e0b','#10b981'];
@@ -1535,7 +1625,7 @@ async function loadWa(){
 async function markSent(b){
   const ids=[...b.querySelectorAll('.it')].map(e=>+e.dataset.id),rs=[];
   ids.forEach(id=>{const r=R.get(id);if(!r)return;waSent.set(id,{spec:r.spec,cur:r.cur,by:me});rs.push({item_id:id,jumlah:r.cur,oleh:me||null})});
-  renderTable();setTimeout(()=>{ids.forEach(id=>sel.delete(id));if(!sel.size)panelOpen=false;renderPanel()},300);if(!rs.length)return;
+  const sy=window.scrollY;renderTable();window.scrollTo(0,sy);setTimeout(()=>{ids.forEach(id=>sel.delete(id));if(!sel.size)panelOpen=false;renderPanel();window.scrollTo(0,sy)},300);if(!rs.length)return;
   try{await sb('wa_terkirim',{m:'POST',b:rs});lastRev=await getRev()}catch(e){$('#msg').textContent='Status terkirim belum tersimpan: '+errMsg(e)}
 }
 let sel1='',pinHas=false,started=false,ticking=false;
@@ -1691,14 +1781,17 @@ function renderDm(){
   });
   h+='</div>';
   if(dmAsk!==null){const ae=dmEntries('in',true).find(x=>x.key===dmAsk);h+=`<div class="dmmod" id="dmmod" role="dialog" aria-modal="true" aria-labelledby="dmmt"><div class="dmbox"><h3 id="dmmt">Keluarkan barang</h3>${ae?`<div class="dmnm">${esc(ae.r.spec)}</div><div class="note">Jumlah ${esc(rnd(ae.jml))} ${esc(ae.r.sat)}${ae.tgl?', datang tgl '+esc(fmtD(ae.tgl)):''}</div>`:''}<label>Jumlah dikeluarkan (${esc(ae.r.sat)}, maks ${esc(rnd(ae.jml))})<input type="number" id="dmjl" min="0" max="${esc(ae.jml)}" step="any" inputmode="decimal" value="${esc(rnd(ae.jml))}"></label>${isStk(ae.r.spk)?`<label>Pilih SPK tujuan<select id="dmspk" style="width:100%;font-size:16px;padding:12px"><option value="">Pilih no. SPK</option>${dmSpkList().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></label>`:''}<label>Tanggal dikeluarkan<input type="date" id="dmtg" value="${todayIso()}"></label><div class="note" id="dmte" style="color:var(--warn)"></div><div class="dmbb"><button class="sm primary" data-ok="${esc(dmAsk)}">Simpan</button><button class="sm" data-no="1">Batal</button></div></div></div>`}
+  const oldSh=p.querySelector('.drawer-shell'),oldTop=oldSh?oldSh.scrollTop:0;
   p.innerHTML=h;
+  {const ns=p.querySelector('.drawer-shell');if(ns&&oldSh){ns.style.animation='none';ns.scrollTop=oldTop}}
   if(dmAsk!==null){const i=$('#dmjl')||$('#dmtg');if(i){i.focus();try{i.select()}catch(x){}}}
 }
 $('#dm').onclick=()=>{dmOpen=!dmOpen;renderDm()};
+const p0=()=>document.querySelector('#dmp .drawer-shell');
 $('#dmp').addEventListener('click',e=>{
   const t=e.target;
   if(t.id==='dmp'||t.id==='dmcl'){dmOpen=false;renderDm()}
-  else if(t.dataset.tab){dmTab=t.dataset.tab;dmAsk=null;renderDm()}
+  else if(t.dataset.tab){dmTab=t.dataset.tab;dmAsk=null;renderDm();const sh=p0();if(sh)sh.scrollTop=0}
   else if(t.dataset.out!==undefined){dmAsk=t.dataset.out;renderDm()}
   else if(t.dataset.no){dmAsk=null;renderDm()}
   else if(t.id==='dmmod'){dmAsk=null;renderDm()}
