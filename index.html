@@ -1190,10 +1190,19 @@ header > #th { flex: none; }
 #wtoast.dup .wt-bar { background: var(--warn); }
 #wtoast.show .wt-bar { animation: wtbar var(--wt-dur, 3.6s) linear forwards; }
 @keyframes wtbar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+#wtoast { padding-right: 44px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#wtoast .wt-x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--mut); font-size: 24px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+#wtoast .wt-x:hover, #wtoast .wt-x:active { background: var(--line); color: var(--ink); }
+#wtoast.wt-hold .wt-bar { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
   #wtoast { transition: opacity .15s ease; }
   #wtoast.show .wt-bar { animation: none; }
 }
+
+/* Pemberitahuan kiriman ke aplikasi stok */
+#stoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);z-index:9998;max-width:min(440px,calc(100% - 28px));padding:12px 16px;border-radius:14px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:6px solid var(--wa);box-shadow:0 14px 28px -8px rgba(15,23,42,.3);font-size:14px;font-weight:600;line-height:1.4;opacity:0;pointer-events:none;cursor:pointer;transition:opacity .2s ease,transform .25s ease}
+#stoast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#stoast.err{border-left-color:var(--warn)}
 </style>
 <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
@@ -1485,29 +1494,66 @@ async function writeRow(r,stages){
   const chg=stages.filter(x=>x.id&&have.find(h=>h.id===x.id&&((h.tgl||'')!==(x.tgl||'')||Math.abs(h.jml-x.jml)>1e-9)));
   if(del.length)await sb('kedatangan?id=in.('+del.map(d=>d.id).join(',')+')',{m:'DELETE'});
   for(const c of chg)await sb('kedatangan?id=eq.'+c.id,{m:'PATCH',b:{tgl:c.tgl||null,jumlah:c.jml}});
-  if(add.length)await sb('kedatangan',{m:'POST',b:add.map(x=>({item_id:r.id,tgl:x.tgl||null,jumlah:x.jml,oleh:x.by||me||null}))});
+  if(add.length)await sb('kedatangan',{m:'POST',b:add.map(x=>({item_id:r.id,tgl:x.tgl||null,jumlah:x.jml,oleh:x.by||me||null,masuk_daftar:!isStok(r)}))});
   await refreshRow(r.id);lastRev=await getRev();
 }
 let wtT=0;
 const WT_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 WT_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 11v6M12 7h.01"/></svg>';
+function wtHide(t,dir){
+  clearTimeout(wtT);
+  if(!dir){t.classList.remove('show');return}
+  t.style.transition='transform .18s ease,opacity .18s ease';
+  t.style.transform=dir==='up'?'translate(-50%,-90px)':'translate(calc(-50% + '+(dir==='l'?-140:140)+'px),0)';
+  t.style.opacity='0';
+  setTimeout(()=>{t.classList.remove('show');t.style.transition='';t.style.transform='';t.style.opacity=''},200);
+}
 function wToast(o){
   let t=document.getElementById('wtoast');
-  if(!t){t=document.createElement('div');t.id='wtoast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');
-    t.addEventListener('click',()=>{
-      clearTimeout(wtT);t.classList.remove('show');
+  if(!t){
+    t=document.createElement('div');t.id='wtoast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');
+    let sx=0,sy=0,dx=0,dy=0,drag=false,moved=false;
+    t.addEventListener('pointerdown',e=>{
+      if(e.target.closest('.wt-x'))return;
+      sx=e.clientX;sy=e.clientY;dx=0;dy=0;drag=true;moved=false;
+      clearTimeout(wtT);t.classList.add('wt-hold');t.style.transition='none';
+      try{t.setPointerCapture(e.pointerId)}catch(x){}
+    });
+    t.addEventListener('pointermove',e=>{
+      if(!drag)return;
+      dx=e.clientX-sx;dy=Math.min(0,e.clientY-sy);
+      if(Math.abs(dx)>8||dy<-8)moved=true;
+      t.style.transform='translate(calc(-50% + '+dx+'px),'+dy+'px)';
+      t.style.opacity=String(Math.max(.25,1-Math.abs(dx)/280-(-dy)/160));
+    });
+    const up=()=>{
+      if(!drag)return;drag=false;t.classList.remove('wt-hold');
+      if(dx<-70)return wtHide(t,'l');
+      if(dx>70)return wtHide(t,'r');
+      if(dy<-40)return wtHide(t,'up');
+      t.style.transition='transform .2s ease,opacity .2s ease';t.style.transform='';t.style.opacity='';
+      setTimeout(()=>{t.style.transition=''},220);
+      clearTimeout(wtT);wtT=setTimeout(()=>wtHide(t),2500);
+    };
+    t.addEventListener('pointerup',up);t.addEventListener('pointercancel',up);
+    t.addEventListener('click',e=>{
+      if(moved){moved=false;return}
+      if(e.target.closest('.wt-x')){wtHide(t);return}
+      wtHide(t);
       if(panelOpen)return;
       const open=()=>{panelOpen=true;renderPanel()};
       if(dmOpen){dmAsk=null;dmOpen=false;renderDm();setTimeout(open,320)}
       else open()
     });
-    document.body.appendChild(t)}
+    document.body.appendChild(t);
+  }
   const dur=o.btn?4.6:3.6;
   t.className=o.dup?'dup':'';
+  t.style.transition='';t.style.transform='';t.style.opacity='';
   t.style.setProperty('--wt-dur',dur+'s');
-  t.innerHTML=`<div class="wt-ic">${o.dup?WT_INFO:WT_OK}</div><div class="wt-tx"><div class="wt-t">${esc(o.title)}</div><div class="wt-n">${esc(o.name)}</div><div class="wt-d">${esc(o.desc)}</div></div>${o.btn?'<button class="wt-b" type="button">Buka</button>':''}<div class="wt-bar"></div>`;
+  t.innerHTML=`<div class="wt-ic">${o.dup?WT_INFO:WT_OK}</div><div class="wt-tx"><div class="wt-t">${esc(o.title)}</div><div class="wt-n">${esc(o.name)}</div><div class="wt-d">${esc(o.desc)}</div></div>${o.btn?'<button class="wt-b" type="button">Buka</button>':''}<button class="wt-x" type="button" aria-label="Tutup">&times;</button><div class="wt-bar"></div>`;
   void t.offsetWidth;t.classList.add('show');
-  clearTimeout(wtT);wtT=setTimeout(()=>t.classList.remove('show'),dur*1000);
+  clearTimeout(wtT);wtT=setTimeout(()=>wtHide(t),dur*1000);
 }
 function addSel(id,quiet){
   const r=R.get(id);if(!r||r.jml===null)return;
@@ -1516,6 +1562,21 @@ function addSel(id,quiet){
   const n=sel.size;
   wToast(dup?{dup:1,title:'Barang ini sudah ada di daftar',name:r.spec,desc:'Tidak perlu ditambah lagi. Total '+n+' barang. Ketuk untuk membuka.',btn:!panelOpen}
     :{title:'Berhasil ditambahkan',name:r.spec,desc:'Masuk ke daftar pesan WhatsApp. Total '+n+' barang. Ketuk untuk membuka.',btn:!panelOpen});
+}
+const isStok=r=>/^stock\b/i.test((r&&r.spk)||'');  /* SPK STOCK: dikelola di aplikasi stok, bukan di Daftar Material Gudang */
+let stT=0;
+function sToast(msg,err){
+  let t=document.getElementById('stoast');
+  if(!t){t=document.createElement('div');t.id='stoast';t.setAttribute('role','status');t.addEventListener('click',()=>t.classList.remove('show'));document.body.appendChild(t)}
+  t.className=err?'err':'';t.textContent=msg;void t.offsetWidth;t.classList.add('show');
+  clearTimeout(stT);stT=setTimeout(()=>t.classList.remove('show'),err?7000:4200);
+}
+/* Barang datang yang diinput di sini juga dikirim ke aplikasi stok (menunggu konfirmasi di sana) */
+async function kirimStok(r,tgl,jml){
+  try{
+    await sb('stok_kiriman',{m:'POST',b:{asal:'manika',sip_item_id:r.id,no_sip:r.sip||null,nama:r.spec,sat:r.sat||'unit',jml,tgl:tgl||null,dikirim_oleh:me}});
+    sToast('Terkirim ke aplikasi stok: '+rnd(jml)+' '+(r.sat||'')+' '+r.spec+'. Menunggu konfirmasi.');
+  }catch(e){sToast('Stok tersimpan di Outstanding, tetapi belum terkirim ke aplikasi stok. '+errMsg(e),true)}
 }
 const em=t=>{const m=$('#e-m');if(m)m.textContent=t};
 const num2=v=>(v===''||isNaN(Number(v)))?null:Number(v);
@@ -1528,7 +1589,8 @@ async function save(id){
   const stages=st0.concat({tgl,jml:add,by:me}).sort((a,b)=>a.tgl<b.tgl?-1:a.tgl>b.tgl?1:0);
   $('#e-m').textContent='Menyimpan...';
   try{await writeRow(r,stages,base)}catch(e){return em(errMsg(e))}
-  editing=null;ntSend('Barang masuk',`${r.spec}: ${add} ${r.sat}${r.spk?' (SPK '+r.spk+')':''} - oleh ${me}`);dmAdd(id,tgl,add);apply(true);addSel(id,true);
+  editing=null;const stk=isStok(r);if(stk)kirimStok(r,tgl,add);  /* hanya SPK STOCK yang dikirim ke aplikasi stok */
+  ntSend('Barang masuk',`${r.spec}: ${add} ${r.sat}${r.spk?' (SPK '+r.spk+')':''} - oleh ${me}`);if(!stk)dmAdd(id,tgl,add);apply(true);addSel(id,true);
 }
 async function delStage(k){
   const [id,i]=k.split(':').map(Number),r=R.get(id);if(!r)return;const vs=vst(r);if(!vs.length)return;
