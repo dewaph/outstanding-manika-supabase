@@ -1239,7 +1239,7 @@ header > #th { flex: none; }
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9m9 10h-9M4 7h.01M4 17h.01M4 12h16"/></svg>
         Stok Gudang <span class="cnt" id="dc" hidden>0</span>
       </button>
-      <button class="sm" id="me" type="button" title="Keluar" aria-label="Keluar" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
+      <button class="sm" id="xl" type="button" aria-haspopup="dialog" title="Impor / Ekspor Excel"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13l4 5M12 13l-4 5"/></svg>Excel</button><button class="sm" id="me" type="button" title="Keluar" aria-label="Keluar" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
     </div>
     <button class="sm" id="th" type="button" aria-label="Ganti mode terang atau gelap"></button>
   </header>
@@ -1339,6 +1339,52 @@ header > #th { flex: none; }
   </div>
 </div>
 
+<style>
+/* ===== Modal Impor / Ekspor Excel ===== */
+.xlm{position:fixed;inset:0;z-index:3000;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,23,42,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.xlm[hidden]{display:none}
+.xl-box{width:min(560px,100%);max-height:92vh;max-height:92dvh;display:flex;flex-direction:column;background:var(--card,#fff);color:var(--ink,#0f172a);border:1px solid var(--line,#e2e8f0);border-radius:18px 18px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.28)}
+@media(min-width:640px){.xlm{align-items:center;padding:20px}.xl-box{border-radius:18px}}
+.xl-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line,#e2e8f0)}
+.xl-h h2{margin:0;font-size:17px;font-weight:800}
+.xl-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer}
+.xl-body{padding:6px 18px calc(18px + env(safe-area-inset-bottom,0px));overflow:auto;-webkit-overflow-scrolling:touch}
+.xl-s{padding:12px 0;border-bottom:1px solid var(--line,#e2e8f0)}
+.xl-s:last-of-type{border-bottom:0}
+.xl-s h3,.xl-body h4{margin:0 0 6px;font-size:14px;font-weight:700}
+.xl-body h4{margin-top:14px}
+.xl-body h4.er{color:var(--red,var(--danger,#e11d48))}
+.xl-s p,.xl-note{margin:0 0 10px;font-size:13px;line-height:1.5;color:var(--mut,#64748b)}
+.xl-note.ok{color:var(--ok,#059669);font-weight:600}
+.xl-ul{margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.55}
+.xl-ul li span{color:var(--mut,#64748b);font-size:12px}
+.xl-ul.er{color:var(--red,var(--danger,#e11d48))}
+.xl-l{display:block;margin:0 0 10px;font-size:12px;font-weight:600;color:var(--mut,#64748b)}
+.xl-l select{display:block;width:100%;margin-top:4px;min-height:40px;padding:8px 10px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:var(--inp,#fff);color:var(--ink,#0f172a);font:inherit;font-size:14px}
+.xl-row{display:flex;flex-wrap:wrap;gap:8px}
+.xl-row.end{justify-content:flex-end;margin-top:12px}
+.xl-btn{min-height:42px;padding:9px 16px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:var(--card,#fff);color:inherit;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.xl-btn.pri{background:var(--acc,#4f46e5);border-color:transparent;color:var(--accink,#fff)}
+.xl-btn:disabled{opacity:.5;cursor:not-allowed}
+.xl-st{margin:8px 0 0;font-size:13px;font-weight:600;color:var(--mut,#64748b);min-height:0}
+.xl-st:empty{display:none}
+.xl-st.err{color:var(--red,var(--danger,#e11d48))}
+.xl-fn{margin:10px 0;font-size:12px;color:var(--mut,#64748b);word-break:break-all}
+.xl-ks{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+.xl-k{padding:10px 12px;border-radius:12px;border:1px solid var(--line,#e2e8f0);background:var(--hl,#f8fafc)}
+.xl-k b{display:block;font-size:20px;font-weight:800}
+.xl-k span{font-size:11.5px;color:var(--mut,#64748b)}
+.xl-k.ok b{color:var(--ok,#059669)}
+.xl-k.ac b{color:var(--acc,#4f46e5)}
+.xl-k.er b{color:var(--red,var(--danger,#e11d48))}
+</style>
+<div class="xlm" id="xlm" role="dialog" aria-modal="true" aria-labelledby="xl-t" hidden>
+  <div class="xl-box">
+    <div class="xl-h"><h2 id="xl-t">Excel</h2><button type="button" class="xl-x" id="xl-x" aria-label="Tutup">&times;</button></div>
+    <div class="xl-body" id="xl-body"></div>
+  </div>
+  <input type="file" id="xl-f" hidden accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+</div>
 <script>
 const SB_URL='https://alnmjxyyfhkytwkwzpon.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbm1qeHl5ZmhreXR3a3d6cG9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0OTU0NjAsImV4cCI6MjEwODA3MTQ2MH0.PxM8rw5yMKSGaIZyCiFO_oHaSd6e1D4iCuYdRDZV5GY';
 let tok='';try{tok=localStorage.getItem('sesi2')||''}catch(e){}
@@ -1917,6 +1963,313 @@ function ntSend(title,body){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='dmtg'||e.target.id==='dmjl')){const b=document.querySelector('#dmmod [data-ok]');if(b)b.click()}});
+
+/* ===== EXCEL: IMPOR & EKSPOR ===== */
+(function(){
+const T_ITEM='sip_item',T_KED='kedatangan',FN='SIP-Manika';
+const XLSX_URLS=['https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];
+const ACC='0D9488',PAL={belum:{bg:'FFFFFF',fg:'475569',bd:'64748B'},sebagian:{bg:'FEF3C7',fg:'92400E',bd:'F59E0B'},selesai:{bg:'D1FAE5',fg:'065F46',bd:'10B981'}};
+/*PURE-START*/
+const nk=s=>String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,'');
+const txt=v=>v==null?'':String(v).trim();
+const short=v=>{v=(v==null||v==='')?'(kosong)':String(v);return v.length>28?v.slice(0,27)+'\u2026':v};
+const iso2ser=s=>isoRe.test(s||'')?Math.round((Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))-Date.UTC(1899,11,30))/864e5):null;
+const ser2iso=n=>{const d=new Date(Date.UTC(1899,11,30)+Math.floor(n)*864e5);return d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())};
+const MONX={jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,agt:8,ags:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12};
+function okYMD(y,m,d){const t=new Date(Date.UTC(y,m-1,d));return y>=1990&&y<=2100&&t.getUTCFullYear()===y&&t.getUTCMonth()===m-1&&t.getUTCDate()===d}
+/* null = kosong, false = tidak valid, selain itu string ISO yyyy-mm-dd */
+function pDate(v){
+  if(v==null||v==='')return null;
+  if(v instanceof Date){const y=v.getFullYear(),m=v.getMonth()+1,d=v.getDate();return okYMD(y,m,d)?y+'-'+p2(m)+'-'+p2(d):false}
+  if(typeof v==='number'){return(v<20000||v>80000)?false:ser2iso(v)}
+  const s=String(v).trim();if(!s)return null;let m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return okYMD(+m[1],+m[2],+m[3])?m[1]+'-'+p2(m[2])+'-'+p2(m[3]):false;
+  if((m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))){let y=+m[3];if(y<100)y+=2000;return okYMD(y,+m[2],+m[1])?y+'-'+p2(m[2])+'-'+p2(m[1]):false}
+  if((m=s.match(/^(\d{1,2})[ \-\/.]([A-Za-z]{3,})\.?[ \-\/.,]*(\d{2,4})$/))){const mo=MONX[m[2].slice(0,3).toLowerCase()];let y=+m[3];if(y<100)y+=2000;return(mo&&okYMD(y,mo,+m[1]))?y+'-'+p2(mo)+'-'+p2(m[1]):false}
+  return false;
+}
+/* null = kosong, undefined = tidak valid */
+function pNum(v){
+  if(v==null||v==='')return null;
+  if(typeof v==='number')return isFinite(v)?v:undefined;
+  let s=String(v).trim().replace(/\s/g,'');if(!s)return null;
+  if(s.includes('.')&&s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+  else if(s.includes(','))s=s.replace(',','.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+  const n=Number(s);return isNaN(n)?undefined:n;
+}
+function parseCsv(t){
+  t=String(t).replace(/^\uFEFF/,'');
+  const first=t.split(/\r?\n/,1)[0]||'';
+  const cnt=c=>first.split(c).length-1;
+  const d=[';',',','\t'].sort((a,b)=>cnt(b)-cnt(a))[0];
+  const out=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;
+    else if(c===d){row.push(f);f=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);out.push(row);row=[];f=''}
+    else f+=c;
+  }
+  if(f!==''||row.length){row.push(f);out.push(row)}
+  return out;
+}
+const AL_M={id:['id','idsip','noid'],tgl:['tgl','tanggal','tglsip','tanggalsip'],sip:['sip','nosip','nomorsip'],
+  spec:['spesifikasi','spesifikasibarang','barang','namabarang','uraian','material'],
+  qty:['qty','jumlah','jml','kuantitas','volume','jumlahpesan','qtypesan'],sat:['sat','satuan'],
+  spk:['spk','nospk','nomorspk'],ket:['keterangan','ket','catatan'],pem:['pemesan','pengawas']};
+const AL_K={kid:['idkedatangan','kid'],iid:['iditem','idbarang'],tgl:['tgldatang','tanggaldatang','tgl','tanggal'],
+  jml:['jumlah','jml','jumlahdatang','qty'],by:['oleh','penerima','diterimaoleh']};
+function mapCols(keys,AL){const m={};for(const f in AL){const ix=keys.findIndex(k=>AL[f].includes(k));if(ix>=0)m[f]=ix}return m}
+function findHeader(aoa){
+  for(let i=0;i<Math.min(10,aoa.length);i++){
+    const keys=(aoa[i]||[]).map(nk);
+    if(keys.includes('iditem'))return{type:'ked',i,map:mapCols(keys,AL_K)};
+    if(keys.some(k=>AL_M.spec.includes(k)))return{type:'main',i,map:mapCols(keys,AL_M)};
+  }
+  return null;
+}
+function buildPlan(sheets){
+  const P={ins:[],upd:[],ked:[],same:0,dup:0,errs:[],found:0};
+  const err=(sh,row,msg)=>P.errs.push({sh,row,msg});
+  const pemMap=new Map();rows.forEach(r=>{if(r.pem)pemMap.set(r.pem.toLowerCase(),r.pem)});
+  const dk=o=>[o.spec,o.spk,o.sip,o.tgl,o.qty==null?'':o.qty,o.pem].map(x=>String(x==null?'':x).trim().toLowerCase()).join('|');
+  const have=new Set(rows.map(dk));
+  const kedSeen=new Set(allKed.map(k=>k.item_id+'|'+(k.tgl||'')+'|'+rnd(Number(k.jumlah))));
+  const kidSet=new Set(allKed.map(k=>k.id));
+  const run=new Map();
+  sheets.forEach(sh=>{
+    const h=findHeader(sh.aoa);if(!h)return;P.found++;
+    for(let i=h.i+1;i<sh.aoa.length;i++){
+      const row=sh.aoa[i]||[],rn=sh.r0+i+1;
+      if(!row.some(c=>txt(c)!==''))continue;
+      const g=f=>h.map[f]===undefined?undefined:row[h.map[f]];
+      const tx=f=>h.map[f]===undefined?undefined:txt(g(f));
+      if(h.type==='ked'){
+        const iid=Number(txt(g('iid')));
+        if(!Number.isInteger(iid)||!R.has(iid)){err(sh.name,rn,'ID Item "'+txt(g('iid'))+'" tidak ditemukan');continue}
+        const kidv=txt(g('kid'));
+        if(kidv!==''&&kidSet.has(Number(kidv))){P.same++;continue}
+        const tgl=pDate(g('tgl'));
+        if(!tgl){err(sh.name,rn,'Tgl datang kosong atau tidak valid');continue}
+        const j=pNum(g('jml'));
+        if(j==null||j<=0){err(sh.name,rn,'Jumlah harus angka lebih dari 0');continue}
+        const key=iid+'|'+tgl+'|'+rnd(j);
+        if(kedSeen.has(key)){P.dup++;continue}
+        const r=R.get(iid),cur=run.has(iid)?run.get(iid):r.cur;
+        if(r.qty!==null&&cur+j>r.qty+1e-9){err(sh.name,rn,'Melebihi pesanan (sisa '+rnd(r.qty-cur)+' '+r.sat+')');continue}
+        run.set(iid,rnd(cur+j));kedSeen.add(key);
+        P.ked.push({item_id:iid,tgl,jumlah:j,oleh:txt(g('by'))||me||null,masuk_daftar:!isStok(r)});
+        continue;
+      }
+      /* lembar utama */
+      const spec=txt(g('spec'));
+      let id=null;const idv=txt(g('id'));
+      if(idv!==''){id=Number(idv);if(!Number.isInteger(id)||!R.has(id)){err(sh.name,rn,'ID "'+idv+'" tidak ditemukan di data');continue}}
+      let tgl,qty;
+      if(h.map.tgl!==undefined){const p=pDate(g('tgl'));if(p===false){err(sh.name,rn,'Tanggal tidak valid: "'+txt(g('tgl'))+'"');continue}tgl=p||''}
+      if(h.map.qty!==undefined){const q=pNum(g('qty'));if(q===undefined||(q!==null&&q<0)){err(sh.name,rn,'Qty bukan angka yang valid: "'+txt(g('qty'))+'"');continue}qty=q}
+      let pem=tx('pem');if(pem)pem=pemMap.get(pem.toLowerCase())||pem;
+      const sip=tx('sip'),sat=tx('sat'),spk=tx('spk'),ket=tx('ket');
+      if(!spec){err(sh.name,rn,'Spesifikasi barang kosong');continue}
+      if(id!==null){
+        const r=R.get(id),patch={},chg=[];
+        if(spec!==r.spec){patch.spesifikasi=spec;chg.push('Spesifikasi: '+short(r.spec)+' \u2192 '+short(spec))}
+        if(tgl!==undefined&&tgl!==(r.tgl||'')){patch.tgl=tgl||null;chg.push('Tgl: '+short(r.tgl)+' \u2192 '+short(tgl))}
+        if(qty!==undefined){
+          const diff=(qty===null)!==(r.qty===null)||(qty!==null&&Math.abs(qty-r.qty)>1e-9);
+          if(diff){
+            if(qty!==null&&qty<r.cur-1e-9){err(sh.name,rn,'Qty '+qty+' lebih kecil dari yang sudah datang ('+r.cur+')');continue}
+            patch.qty=qty;chg.push('Qty: '+short(r.qty)+' \u2192 '+short(qty));
+          }
+        }
+        [['sip','no_sip','SIP',r.sip,sip],['sat','sat','Sat',r.sat,sat],['spk','no_spk','No. SPK',r.spk,spk],['ket','keterangan','Keterangan',r.ket,ket],['pem','pemesan','Pemesan',r.pem,pem]]
+          .forEach(([,col,lab,ov,nv])=>{if(nv!==undefined&&nv!==txt(ov)){patch[col]=nv;chg.push(lab+': '+short(ov)+' \u2192 '+short(nv))}});
+        if(chg.length)P.upd.push({id,spec:r.spec,patch,chg});else P.same++;
+        continue;
+      }
+      const o={spec,spk:spk||'',sip:sip||'',tgl:tgl||'',qty:qty===undefined?null:qty,pem:pem||''};
+      if(have.has(dk(o))){P.dup++;continue}
+      P.ins.push({tgl:o.tgl||null,no_sip:o.sip,spesifikasi:spec,qty:o.qty,sat:sat||'',no_spk:o.spk,keterangan:ket||'',pemesan:o.pem});
+    }
+  });
+  return P;
+}
+/*PURE-END*/
+
+/* ---------- Pustaka SheetJS (dimuat saat dibutuhkan) ---------- */
+let xlP=null;
+function addScript(u){return new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=()=>ok();e.onerror=()=>{e.remove();no(new Error('net'))};document.head.appendChild(e)})}
+function loadX(){
+  if(window.XLSX)return Promise.resolve(window.XLSX);
+  if(xlP)return xlP;
+  xlP=(async()=>{
+    for(const u of XLSX_URLS){try{await addScript(u);if(window.XLSX)return window.XLSX}catch(e){}}
+    xlP=null;throw new Error('net');
+  })();
+  return xlP;
+}
+
+/* ---------- Ekspor ---------- */
+const HDR_M=['ID','Tgl','SIP','Spesifikasi barang','Qty','Sat','No. SPK','Keterangan','Pemesan','Tgl datang','Jumlah datang','Sisa','Status'];
+const HDR_K=['ID Kedatangan','ID Item','Spesifikasi barang','Tgl datang','Jumlah','Oleh'];
+const PETUNJUK=[
+  'PETUNJUK IMPOR EXCEL','',
+  '1. Lembar "Outstanding": satu baris = satu barang SIP.',
+  '2. Kolom ID terisi = memperbarui barang tersebut. Kolom ID kosong = barang baru.',
+  '3. Kolom Tgl datang, Jumlah datang, Sisa, dan Status hanya informasi, tidak ikut diimpor.',
+  '4. Lembar "Kedatangan": satu baris = satu kali barang datang. ID Item wajib diisi (lihat kolom ID di lembar Outstanding).',
+  '5. ID Kedatangan kosong = kedatangan baru. Jika terisi dan sudah ada di data, baris dilewati.',
+  '6. Format tanggal: dd/mm/yyyy (contoh 25/11/2026).',
+  '7. Baris yang sama persis dengan data yang sudah ada akan dilewati, jadi aman jika file diimpor dua kali.',
+  '8. Sebelum disimpan, aplikasi menampilkan ringkasan perubahan untuk Anda periksa.'
+];
+const dcell=s=>{const n=iso2ser(s);return n!==null?n:(s||null)};
+const BD=c=>({style:'thin',color:{rgb:c}});
+const boxB=c=>({top:BD(c),bottom:BD(c),left:BD(c),right:BD(c)});
+/* sts: status tiap baris data (null = tanpa warna status); stCol: kolom badge status; numCols: rata kanan */
+function mkSheet(X,aoa,widths,dateCols,sts,stCol,numCols){
+  const ws=X.utils.aoa_to_sheet(aoa);
+  ws['!cols']=widths.map(w=>({wch:w}));
+  ws['!rows']=[{hpt:26}];
+  const rg=X.utils.decode_range(ws['!ref']);
+  for(let c=0;c<=rg.e.c;c++){
+    const a=X.utils.encode_cell({r:0,c});if(!ws[a])ws[a]={t:'s',v:''};
+    ws[a].s={fill:{patternType:'solid',fgColor:{rgb:ACC}},font:{name:'Calibri',sz:11,bold:true,color:{rgb:'FFFFFF'}},alignment:{horizontal:numCols.includes(c)?'right':'left',vertical:'center'},border:boxB('E2E8F0')};
+  }
+  for(let r=1;r<=rg.e.r;r++){
+    const P=PAL[sts[r-1]]||PAL.belum;
+    for(let c=0;c<=rg.e.c;c++){
+      const a=X.utils.encode_cell({r,c});if(!ws[a])ws[a]={t:'s',v:''};
+      if(dateCols.includes(c)&&ws[a].t==='n')ws[a].z='dd/mm/yyyy';
+      const badge=c===stCol;
+      ws[a].s={
+        fill:{patternType:'solid',fgColor:{rgb:badge?P.bd:P.bg}},
+        font:{name:'Calibri',sz:11,bold:badge,color:{rgb:badge?'FFFFFF':'0F172A'}},
+        alignment:{vertical:'center',horizontal:badge?'center':(numCols.includes(c)||dateCols.includes(c))?'right':'left'},
+        border:boxB('CBD5E1')
+      };
+    }
+  }
+  ws['!autofilter']={ref:ws['!ref']};
+  return ws;
+}
+function buildBook(X,list){
+  const m=[HDR_M],k=[HDR_K],ms=[],ks=[];
+  list.forEach(r=>{
+    m.push([r.id,dcell(r.tgl),r.sip||null,r.spec,r.qty,r.sat||null,r.spk||null,r.ket||null,r.pem||null,dcell(r.dtg),r.stg?r.cur:null,r.sisa,LBL[r.st]||'']);ms.push(r.st);
+    (r.stg||[]).forEach(s=>{k.push([s.id,r.id,r.spec,dcell(s.tgl),s.jml,s.by||null]);ks.push(r.st)});
+  });
+  const wb=X.utils.book_new();
+  X.utils.book_append_sheet(wb,mkSheet(X,m,[8,12,14,46,10,8,16,28,18,12,14,10,18],[1,9],ms,12,[0,4,10,11]),'Outstanding');
+  X.utils.book_append_sheet(wb,mkSheet(X,k,[14,9,46,12,10,16],[3],ks,-1,[0,1,4]),'Kedatangan');
+  const pw=X.utils.aoa_to_sheet(PETUNJUK.map(t=>[t]));pw['!cols']=[{wch:110}];
+  if(pw.A1)pw.A1.s={font:{bold:true,sz:14,color:{rgb:ACC}}};
+  X.utils.book_append_sheet(wb,pw,'Petunjuk');
+  return wb;
+}
+async function doExport(scope,tpl){
+  const X=await loadX();
+  const list=tpl?[]:(scope==='view'?view:rows).slice().sort((a,b)=>a.id-b.id);
+  X.writeFile(buildBook(X,list),FN+(tpl?'_template':'')+'_'+todayIso()+'.xlsx',{compression:true});
+  return list.length;
+}
+
+/* ---------- Tampilan ---------- */
+const Q=s=>document.querySelector(s),nf=n=>Number(n).toLocaleString('id-ID');
+let plan=null,fileName='',working=false;
+const setBody=(title,html)=>{Q('#xl-t').textContent=title;Q('#xl-body').innerHTML=html};
+const stat=m=>{const e=Q('#xl-st');if(e){e.textContent=m||'';e.className='xl-st'}};
+const statErr=m=>{const e=Q('#xl-st');if(e){e.textContent=m;e.className='xl-st err'}};
+function menu(){
+  const filt=view.length!==rows.length;
+  setBody('Excel',
+  `<section class="xl-s"><h3>Ekspor ke Excel</h3><p>Unduh data outstanding beserta riwayat kedatangannya (lembar Outstanding, Kedatangan, dan Petunjuk).</p>`+
+  (filt?`<label class="xl-l">Data yang diekspor<select id="xl-sc"><option value="all">Semua data (${nf(rows.length)} baris)</option><option value="view">Sesuai filter saat ini (${nf(view.length)} baris)</option></select></label>`:'')+
+  `<button type="button" class="xl-btn pri" id="xl-exp"${rows.length?'':' disabled'}>Unduh Excel (.xlsx)</button></section>`+
+  `<section class="xl-s"><h3>Impor dari Excel</h3><p>Pilih file .xlsx, .xls, atau .csv. Anda akan melihat ringkasan dulu sebelum apa pun disimpan.</p>`+
+  `<ul class="xl-ul"><li>Baris tanpa ID: ditambahkan sebagai barang baru.</li><li>Baris dengan ID: memperbarui barang tersebut.</li><li>Lembar Kedatangan: menambah riwayat datang.</li></ul>`+
+  `<div class="xl-row"><button type="button" class="xl-btn pri" id="xl-pick"${me?'':' disabled'}>Pilih file Excel</button><button type="button" class="xl-btn" id="xl-tpl">Unduh template</button></div>`+
+  (me?'':'<p class="xl-note">Masuk dulu untuk mengimpor data.</p>')+`</section><p class="xl-st" id="xl-st" role="status"></p>`);
+}
+function preview(){
+  const p=plan,n=p.ins.length+p.upd.length+p.ked.length;
+  const k=(v,l,c)=>`<div class="xl-k ${c}"><b>${nf(v)}</b><span>${l}</span></div>`;
+  let h=`<p class="xl-fn">${esc(fileName)}</p><div class="xl-ks">`+k(p.ins.length,'Barang baru','ok')+k(p.upd.length,'Diperbarui','ac')+k(p.ked.length,'Kedatangan baru','ac')+k(p.same+p.dup,'Dilewati (sudah ada)','mu')+k(p.errs.length,'Bermasalah','er')+`</div>`;
+  if(p.upd.length){h+=`<h4>Contoh perubahan</h4><ul class="xl-ul">`+p.upd.slice(0,6).map(u=>`<li><b>ID ${u.id}</b> ${esc(short(u.spec))}<br><span>${esc(u.chg.join('; '))}</span></li>`).join('')+(p.upd.length>6?`<li>dan ${nf(p.upd.length-6)} lainnya</li>`:'')+`</ul>`}
+  if(p.errs.length){h+=`<h4 class="er">Baris dilewati karena bermasalah</h4><ul class="xl-ul er">`+p.errs.slice(0,25).map(e=>`<li>${esc(e.sh)}, baris ${e.row}: ${esc(e.msg)}</li>`).join('')+(p.errs.length>25?`<li>dan ${nf(p.errs.length-25)} lainnya</li>`:'')+`</ul>`}
+  if(!n)h+=`<p class="xl-note">Tidak ada perubahan yang perlu disimpan.</p>`;
+  h+=`<p class="xl-st" id="xl-st" role="status"></p><div class="xl-row end"><button type="button" class="xl-btn" id="xl-back">Kembali</button><button type="button" class="xl-btn pri" id="xl-go"${n?'':' disabled'}>Simpan ${nf(n)} perubahan</button></div>`;
+  setBody('Periksa sebelum impor',h);
+}
+function xOpen(){menu();Q('#xlm').hidden=false;document.body.style.overflow='hidden'}
+function xClose(){if(working)return;Q('#xlm').hidden=true;plan=null;document.body.style.overflow=(typeof panelOpen!=='undefined'&&panelOpen)?'hidden':''}
+
+async function onFile(f){
+  if(!f)return;
+  if(!me)return statErr('Masuk dulu untuk mengimpor data.');
+  stat('Menyegarkan data terbaru...');
+  try{
+    await refresh();
+    if(!rows.length)return statErr('Data belum termuat. Coba lagi sebentar lagi.');
+    stat('Membaca file...');
+    let sheets;
+    if(/\.csv$/i.test(f.name)){
+      sheets=[{name:'CSV',aoa:parseCsv(await f.text()),r0:0}];
+    }else{
+      const X=await loadX();
+      const wb=X.read(await f.arrayBuffer(),{type:'array'});
+      sheets=wb.SheetNames.map(n=>{const ws=wb.Sheets[n];return{name:n,aoa:X.utils.sheet_to_json(ws,{header:1,raw:true,defval:null,blankrows:true}),r0:ws['!ref']?X.utils.decode_range(ws['!ref']).s.r:0}});
+    }
+    const p=buildPlan(sheets);
+    if(!p.found)return statErr('Kolom "Spesifikasi barang" tidak ditemukan. Unduh template untuk melihat format yang benar.');
+    plan=p;fileName=f.name;preview();
+  }catch(e){
+    statErr(e&&e.message==='net'?'Pustaka Excel gagal dimuat. Periksa koneksi internet lalu coba lagi.':'File tidak bisa dibaca. Pastikan formatnya .xlsx, .xls, atau .csv.');
+  }
+}
+
+async function runImport(){
+  if(working||!plan)return;
+  working=true;
+  const p=plan,total=p.ins.length+p.upd.length+p.ked.length;
+  let done=0;const ok={ins:0,upd:0,ked:0};
+  const prog=t=>stat(t+' ('+nf(done)+' dari '+nf(total)+')');
+  Q('#xl-go').disabled=true;Q('#xl-back').disabled=true;
+  let fail=null;
+  try{
+    for(let i=0;i<p.ins.length;i+=200){const c=p.ins.slice(i,i+200);prog('Menyimpan barang baru');await sb(T_ITEM,{m:'POST',b:c});done+=c.length;ok.ins+=c.length}
+    for(let i=0;i<p.upd.length;i+=5){const c=p.upd.slice(i,i+5);prog('Memperbarui barang');await Promise.all(c.map(u=>sb(T_ITEM+'?id=eq.'+u.id,{m:'PATCH',b:u.patch})));done+=c.length;ok.upd+=c.length}
+    for(let i=0;i<p.ked.length;i+=200){const c=p.ked.slice(i,i+200);prog('Menyimpan kedatangan');await sb(T_KED,{m:'POST',b:c});done+=c.length;ok.ked+=c.length}
+  }catch(e){fail=e}
+  stat('Memuat ulang data...');
+  try{await refresh();lastRev=await getRev()}catch(e){}
+  working=false;plan=null;
+  if(fail&&fail.code==='sesi'){xClose();return relogin()}
+  const sum=`<ul class="xl-ul"><li>Barang baru: <b>${nf(ok.ins)}</b></li><li>Barang diperbarui: <b>${nf(ok.upd)}</b></li><li>Kedatangan baru: <b>${nf(ok.ked)}</b></li></ul>`;
+  setBody(fail?'Impor terhenti':'Impor selesai',
+    (fail?`<p class="xl-st err">${esc(errMsg(fail))}<br>Sebagian data mungkin sudah tersimpan. Data sudah dimuat ulang, silakan periksa lalu impor ulang bagian yang belum masuk (baris yang sudah ada akan dilewati).</p>`:`<p class="xl-note ok">Semua perubahan berhasil disimpan.</p>`)+sum+`<div class="xl-row end"><button type="button" class="xl-btn pri" id="xl-done">Tutup</button></div>`);
+}
+
+function onClick(e){
+  if(e.target.id==='xlm'||e.target.id==='xl-x'||e.target.id==='xl-done')return xClose();
+  const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.id==='xl-exp'){
+    const sc=Q('#xl-sc');b.disabled=true;stat('Menyiapkan file...');
+    doExport(sc?sc.value:'all',false).then(n=>{b.disabled=false;stat('Selesai: '+nf(n)+' baris diekspor.')})
+      .catch(()=>{b.disabled=false;statErr('Pustaka Excel gagal dimuat. Periksa koneksi internet lalu coba lagi.')});
+  }else if(b.id==='xl-tpl'){
+    doExport('all',true).then(()=>stat('Template diunduh.')).catch(()=>statErr('Pustaka Excel gagal dimuat. Periksa koneksi internet lalu coba lagi.'));
+  }else if(b.id==='xl-pick'){Q('#xl-f').click()}
+  else if(b.id==='xl-back'){menu()}
+  else if(b.id==='xl-go'){runImport()}
+}
+const btn=Q('#xl');if(btn)btn.addEventListener('click',xOpen);
+Q('#xlm').addEventListener('click',onClick);
+Q('#xl-f').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';onFile(f)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!Q('#xlm').hidden)xClose()});
+})();
 </script>
 </body>
 </html>
